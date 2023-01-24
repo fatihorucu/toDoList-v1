@@ -1,0 +1,26 @@
+<%- include -%> 
+<body>
+    <div class="box" id="heading">
+        <h1><%= listTitle %></h1>
+    </div>
+    <div class="box">
+        <% itemList.forEach(element => { %>
+            <div class="item">
+                <input type="checkbox">
+                <p><%= element %></p>
+            </div>
+            <% }) %>
+        <form action="/" method="post" class="item">
+            <input type="text" name="newItem" placeholder="New Item">
+            <button type="submit" name="list" value="<%=listTitle%>">+</button>
+        </form>
+    </div>
+    <!-- <# if (kindOfDay == "Saturday" || kindOfDay == "Sunday") { %>
+        <h1 style="color: purple;"><#= kindOfDay %> List </h1>
+    <# } else { %>
+        <h1 style="color: red;"><#= kindOfDay %> List </h1>
+    <# } %> -->
+    
+    
+</body>
+</html>
