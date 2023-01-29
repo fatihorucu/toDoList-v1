@@ -1,18 +1,21 @@
-<%- include -%> 
+<%- include("header") -%> 
 <body>
     <div class="box" id="heading">
         <h1><%= listTitle %></h1>
     </div>
     <div class="box">
         <% itemList.forEach(element => { %>
-            <div class="item">
-                <input type="checkbox">
-                <p><%= element %></p>
-            </div>
+            <form action="/delete" method="post">
+                <div class="item">
+                    <input type="checkbox" name = "checkbox" onchange="this.form.submit()" value="<%= element._id %>">
+                    <p><%= element.name %></p>
+                </div>
+                <input type="hidden" name="listName" value="<%=pageDir%>"></input>
+            </form>
             <% }) %>
         <form action="/" method="post" class="item">
             <input type="text" name="newItem" placeholder="New Item">
-            <button type="submit" name="list" value="<%=listTitle%>">+</button>
+            <button type="submit" name="list" value="<%=pageDir%>">+</button>
         </form>
     </div>
     <!-- <# if (kindOfDay == "Saturday" || kindOfDay == "Sunday") { %>

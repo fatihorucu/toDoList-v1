@@ -1,41 +1,117 @@
+//Node Modules
 const express = require("express");
 const bodyParser = require("body-parser");
+const mongoose = require("mongoose");
+const _ = require("lodash")
+// const date = require(__dirname +"/date.js");
 
 const app = express();
 app.use(bodyParser.urlencoded({extended:true}))
 app.set("view engine", "ejs");
 app.use(express.static("public")) // to be able to use public folder
-let items = [];
-let workItems = [];
-app.get("/", function(req, res){
-    let today = new Date();
-    const options = {
-        weekday: "long",
-        day: "numeric",
-        month: "long",
-    };
-    let day = today.toLocaleDateString("en-US",options)
-    // var day = new Intl.DateTimeFormat("en-US", options).format(today);
 
-
-    res.render("list", {listTitle: day, itemList: items}) // looks for a file called list.ejs in views directory. 
-});                                                     // And changes the kindOfDay variable with day.
-app.post("/",function(req,res){
-    let item = req.body.newItem;
-    console.log(req.body.list);
-    if(req.body.list === "Work"){
-        workItems.push(item)
-        res.redirect("/work")
-    }else{
-        items.push(item)
-        res.redirect("/");
-    }
-    
-    
+//Setting up Mongoose
+mongoose.connect("mongodb://127.0.0.1:27017/toDoListDB")
+mongoose.set("strictQuery",false);
+const itemsSchema = new mongoose.Schema({
+    name: String
+});
+const listSchema = new mongoose.Schema({
+    name: String,
+    itemList: [itemsSchema],
+    pageDir: String
+})
+const List = mongoose.model("List",listSchema)
+//Setting up Default items
+const Item = mongoose.model("Item",itemsSchema)
+const defaultItem1 = new Item({
+    name: "Eat"
+})
+const defaultItem2 = new Item({
+    name: "Code"
+})
+const defaultItem3 = new Item({
+    name: "Sleep"
 })
 
-app.get("/work",function(req,res){
-    res.render("list", {listTitle:"Work", itemList: workItems})
+const defaultItems = [defaultItem1,defaultItem2,defaultItem3]
+
+
+app.get("/", function(req, res){
+    const pageName = ""
+    List.findOne({pageDir:pageName},(err,result)=>{
+        if(!err){
+            if (result === null) {
+                const list = new List({
+                    name: "Today",
+                    pageDir: "",
+                    itemList: defaultItems
+                })
+                list.save()
+                res.redirect("/"+ pageName)
+            } else {
+                res.render("list", {listTitle:result.name, itemList: result.itemList,pageDir:result.pageDir})
+            }
+        }
+    })
+});                                                   
+app.post("/",function(req,res){
+    let itemName = req.body.newItem;
+    let pageDir = req.body.list;
+    // if(req.body.list === "Work"){
+    //     workItems.push(item)
+    //     res.redirect("/work")
+    // }else{
+    //     items.push(item)
+    //     res.redirect("/");
+    // }
+    const item = new Item({
+        name: itemName
+    })
+    List.findOne({pageDir: pageDir},function(error,result){
+        if(!error){
+             item.save()
+             result.itemList.push(item);
+             result.save()
+             res.redirect("/"+result.pageDir)
+         }
+    }) 
+})
+
+app.post("/delete",function(req,res){
+    const listName = req.body.listName
+    const itemId = req.body.checkbox
+    console.log(listName);
+    console.log(itemId);
+    List.findOne({pageDir:listName},function(err,result){
+        result.itemList.forEach(element => {
+            if(element.id === itemId){
+                result.itemList.remove(element)
+                Item.findByIdAndDelete(itemId,function(err){})
+                result.save()
+                res.redirect("/"+listName)
+            }
+        });
+    })
+})
+app.get("/:page",function(req,res){
+    const pageName = req.params.page
+    const pageTitle = _.startCase(pageName)
+    List.findOne({pageDir:pageName},(err,result)=>{
+        if(!err){
+            if (result === null) {
+                const list = new List({
+                    name: pageTitle,
+                    pageDir: pageName,
+                    itemList: defaultItems
+                })
+                list.save()
+                res.redirect("/"+ pageName)
+            } else {
+                res.render("list", {listTitle:result.name, itemList: result.itemList,pageDir:result.pageDir})
+            }
+        }
+    })
 })
 
 app.get("/about",function(req,res){
